@@ -47,5 +47,7 @@ filemenu.add_separator()
 filemenu.add_command(label = "Quit", command = root.quit)
 menubar.add_cascade(label = "File", menu = filemenu)
 
+editmenu = Menu(menubar)
+editmenu.add_command(label = )
 root.config(menu = menubar)
 root.mainloop()
