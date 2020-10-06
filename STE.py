@@ -4,11 +4,14 @@ from tkinter import font
 
 root = Tk()
 root.title('Simple Text Editor')
-root.geometry ("1200x660")
+root.geometry ("1200x680")
 
 #Checking existance of a saved file
 global filename_token 
 filename_token = False
+
+global selected_text
+selected_text = False
 
 #create newFile function
 def NewFile():
@@ -75,17 +78,102 @@ def SaveFile():
 	else:
 		SaveFileAs()
 
+#Function for 'cutting' a piece of text
+def CutText(argu):
+	global selected_text
+
+	if argu:
+		selected_text = root.clipboard_get()
+	else:
+		if (frame_text.selection_get()):
+			#Get selected text
+			selected_text = frame_text.selection_get()
+			#delete selected text
+			frame_text.delete("sel.first", "sel.last")
+			#clear clipboard and append
+			root.clipboard_clear()
+			root.clipboard_append(selected_text)
+
+
+#Function for copying text
+def CopyText(argu):
+	global selected_text
+	#check if shortcut was used
+	if argu:
+		selected_text = root.clipboard_get()
+	else:	
+		if(frame_text.selection_get()):
+			selected_text = frame_text.selection_get()
+			root.clipboard_clear()
+			root.clipboard_append(selected_text)
+
+#Function for pasting text
+def PasteText(argu):
+	global selected_text
+	if argu:
+		selected_text = root.clipboard_get()
+	else:
+		if(selected_text):
+			cursor_posn = frame_text.index(INSERT)
+			frame_text.insert(cursor_posn, selected_text)
+
+def SelectAll(argu):
+	if(argu):
+		frame_text.tag_add('sel', '1.0', 'end')
+
+#function to write bold text
+def to_bold():
+	global selected_text
+	Bold_font = font.Font(frame_text, frame_text.cget("font"))
+	Bold_font.configure(weight = "bold")
+
+	#configure a tag
+	frame_text.tag_configure("bold", font = Bold_font)
+
+	#defining current tags
+	current_tags = frame_text.tag_names("sel.first")
+
+	#see if tag has been set
+	if "bold" in current_tags:
+		frame_text.tag_remove("bold", "sel.first", "sel.last")
+	else:
+		frame_text.tag_add("bold", "sel.first", "sel.last")
+#function to write italic text
+def to_ital():
+	global selected_text
+	Italics_font = font.Font(frame_text, frame_text.cget("font"))
+	Italics_font.configure(slant = "italic")
+
+	#configure a tag
+	frame_text.tag_configure("italic", font = Italics_font)
+
+	#defining current tags
+	current_tags = frame_text.tag_names("sel.first")
+
+	#see if tag has been set
+	if "italic" in current_tags:
+		frame_text.tag_remove("italic", "sel.first", "sel.last")
+	else:
+		frame_text.tag_add("italic", "sel.first", "sel.last")
+
+#toolbar frame
+toolbar_frame = Frame(root)
+toolbar_frame.pack(fill = X)
 
 #Create main frame
 primary_frame = Frame(root)
 primary_frame.pack(pady = 5)
 
 #Create Scroll bar for the text box
-text_scroll = Scrollbar(primary_frame)
-text_scroll.pack(side = RIGHT, fill = Y)
+verti_scroll = Scrollbar(primary_frame)
+verti_scroll.pack(side = RIGHT, fill = Y)
+
+#Horizontal scroll bar
+horiz_scroll = Scrollbar(primary_frame, orient='horizontal')
+horiz_scroll.pack(side = BOTTOM, fill = X)
 
 #Create a text box
-frame_text = Text(primary_frame, width = 97, height = 25, font = ("Helvetica", 16), selectbackground = "cyan", selectforeground = "black", undo=True, yscrollcommand = text_scroll.set)
+frame_text = Text(primary_frame, width = 97, height = 25, font = ("Helvetica", 16), selectbackground = "cyan", selectforeground = "black", undo=True, xscrollcommand=horiz_scroll.set,yscrollcommand = verti_scroll.set, wrap="none")
 frame_text.pack()
 
 #Create menu
@@ -105,16 +193,34 @@ file_menu.add_command(label = "Exit", command = root.quit)
 #add Edit Menu
 edit_menu = Menu(menubar, tearoff = False)
 menubar.add_cascade(label = "Edit", menu = edit_menu)
-edit_menu.add_command(label = "Cut")
-edit_menu.add_command(label = "Copy")
-edit_menu.add_command(label = "Paste")
-edit_menu.add_command(label = "Undo")
-edit_menu.add_command(label = "Redo")
+edit_menu.add_command(label = "Cut", command = lambda: CutText(False), accelerator="Ctrl+x")
+edit_menu.add_command(label = "Copy", command = lambda: CopyText(False), accelerator="Ctrl+c")
+edit_menu.add_command(label = "Paste    ", command = lambda: PasteText(False), accelerator="Ctrl+v")
+edit_menu.add_separator()
+edit_menu.add_command(label = "Undo", command = frame_text.edit_undo, accelerator="Ctrl+z")
+edit_menu.add_command(label = "Redo    ", command = frame_text.edit_redo, accelerator="Ctrl+Shift+z")
 
 #add Status bar to text pane 
 status_bar = Label(root, text = "Ready  ", anchor = W)
-status_bar.pack(fill=X, side=BOTTOM, ipady = 5)
+status_bar.pack(fill=X, side=BOTTOM, ipady = 8)
 
-text_scroll.config(command = frame_text.yview)
+verti_scroll.config(command = frame_text.yview)
+horiz_scroll.config(command = frame_text.xview)
 
+#Edit bindings
+root.bind('<Control-Key-x>', CutText)
+root.bind('<Control-Key-c>', CopyText)
+root.bind('<Control-Key-v>', PasteText)
+root.bind('<Control-Key-a>', SelectAll)
+ 
+
+#Bold Button
+button_bold = Button(toolbar_frame, text = "Bold", command = to_bold)
+button_bold.grid(row =0, column = 0, sticky = W, padx = 5)
+
+#Italic Button
+button_italics = Button(toolbar_frame, text = "Italics", command = to_ital)
+button_italics.grid(row =0, column = 1, padx = 5)
+
+#root.clipboard_append(" ")
 root.mainloop()
